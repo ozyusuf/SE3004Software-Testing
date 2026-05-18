@@ -10,24 +10,24 @@ package shopeasy;
  *   final      = discounted * (1 + taxRate / 100)
  * </pre>
  *
- * <p><strong>Contracts (Task 3 – Design by Contract):</strong>
- * Students are required to add {@code assert} statements for pre- and
- * post-conditions as part of Task 3. See the Javadoc on
- * {@link #calculate(double, double, double)} for the expected contracts.
+ * <p>Contracts are enforced with {@code assert} statements when the JVM
+ * runs with {@code -ea}. See the Javadoc on
+ * {@link #calculate(double, double, double)} for the exact pre- and
+ * post-conditions.
  */
 public class PriceCalculator {
 
     /**
      * Computes the final price after applying a discount and then tax.
      *
-     * <p><em>Pre-conditions (Task 3):</em>
+     * <p><em>Pre-conditions:</em>
      * <ul>
      *   <li>{@code basePrice >= 0}</li>
      *   <li>{@code 0 <= discountRate <= 100}</li>
      *   <li>{@code 0 <= taxRate <= 100}</li>
      * </ul>
      *
-     * <p><em>Post-condition (Task 3):</em> result >= 0
+     * <p><em>Post-condition:</em> result &gt;= 0
      *
      * @param basePrice    the original price before any adjustments (>= 0)
      * @param discountRate the discount percentage to apply, in [0, 100]

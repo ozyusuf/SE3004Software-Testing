@@ -12,8 +12,8 @@ import java.util.List;
  *   <li>{@link PaymentGateway}   — to charge the customer</li>
  * </ul>
  *
- * <p>In tests (Task 5) both dependencies are replaced by Mockito mocks so the
- * processor's logic can be verified in complete isolation.
+ * <p>In tests both dependencies are typically replaced by Mockito mocks so
+ * the processor's logic can be verified in isolation.
  *
  * <h3>Processing rules</h3>
  * <ol>

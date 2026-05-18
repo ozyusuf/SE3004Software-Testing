@@ -4,8 +4,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
@@ -17,9 +19,10 @@ import static org.assertj.core.api.Assertions.within;
  *   - discountRate: {0}, (0, 100), {100}
  *   - taxRate:      {0}, (0, 100), {100}
  *
- * On-point boundaries: 0 and 100 for the rates.
- * Off-points outside [0, 100] are covered by ContractTest (Task 3) since
- * the production class does not validate them yet.
+ * On-point boundaries are 0 and 100 for the rates. A few off-point tests at
+ * the bottom of the file cover the invalid-input partition required by the
+ * spec; they overlap on purpose with ContractTest because contracts only
+ * kick in once asserts are added in Task 3.
  */
 class PriceCalculatorSpecTest {
 
@@ -141,5 +144,28 @@ class PriceCalculatorSpecTest {
         double viaCalculate = calculator.calculate(250.0, 0, 18);
         assertThat(viaConvenience).isCloseTo(viaCalculate, within(EPS));
         assertThat(viaConvenience).isCloseTo(295.0, within(EPS));
+    }
+
+    // Off-point: basePrice just below 0 is an invalid input.
+    @Test
+    void invalidInput_negativeBase_isRejected() {
+        assertThatThrownBy(() -> calculator.calculate(-0.01, 10, 10))
+                .isInstanceOf(AssertionError.class);
+    }
+
+    // Off-point: discountRate just outside [0,100] in both directions.
+    @ParameterizedTest
+    @ValueSource(doubles = {-0.01, 100.01, -5.0, 150.0})
+    void invalidInput_discountOutsideRange_isRejected(double badDiscount) {
+        assertThatThrownBy(() -> calculator.calculate(100, badDiscount, 0))
+                .isInstanceOf(AssertionError.class);
+    }
+
+    // Off-point: taxRate just outside [0,100] in both directions.
+    @ParameterizedTest
+    @ValueSource(doubles = {-0.01, 100.01, -10.0, 250.0})
+    void invalidInput_taxOutsideRange_isRejected(double badTax) {
+        assertThatThrownBy(() -> calculator.calculate(100, 0, badTax))
+                .isInstanceOf(AssertionError.class);
     }
 }

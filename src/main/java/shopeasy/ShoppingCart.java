@@ -7,12 +7,10 @@ import java.util.List;
 /**
  * A mutable shopping cart that holds {@link CartItem}s.
  *
- * <p><strong>Contracts (Task 3 – Design by Contract):</strong>
- * <ul>
- *   <li>Students are required to add {@code assert} pre-/post-condition statements
- *       to {@link #addItem(Product, int)} and {@link #applyDiscount(double)} as
- *       part of Task 3. The Javadoc below describes the expected contracts.</li>
- * </ul>
+ * <p>Contracts are enforced at runtime via {@code assert} on
+ * {@link #addItem(Product, int)} and {@link #applyDiscount(double)} when the
+ * JVM is started with {@code -ea}. See the Javadoc on each method for the
+ * pre- and post-conditions.
  *
  * <p><strong>Invariant:</strong> {@link #total()} is always &gt;= 0 after any operation.
  */
@@ -24,9 +22,9 @@ public class ShoppingCart {
      * Adds a product to the cart. If the product is already present, the quantities
      * are combined into the existing cart line.
      *
-     * <p><em>Pre-condition (Task 3):</em> {@code product != null}, {@code quantity > 0}<br>
-     * <em>Post-condition (Task 3):</em> cart contains an entry for {@code product};
-     * total number of distinct items in the cart >= previous count.
+     * <p><em>Pre-condition:</em> {@code product != null}, {@code quantity > 0}<br>
+     * <em>Post-condition:</em> the cart contains an entry for {@code product} and the
+     * number of distinct lines does not shrink.
      *
      * @param product  the product to add (must not be null)
      * @param quantity number of units to add (must be > 0)
@@ -86,8 +84,8 @@ public class ShoppingCart {
      * The discount is applied <em>on top of</em> the raw subtotal; it does not persist
      * between calls (i.e., calling this method twice with 10% does not compound discounts).
      *
-     * <p><em>Pre-condition (Task 3):</em> {@code 0 <= discountRate <= 100}<br>
-     * <em>Post-condition (Task 3):</em> returned value &lt;= {@link #total()} when
+     * <p><em>Pre-condition:</em> {@code 0 <= discountRate <= 100}<br>
+     * <em>Post-condition:</em> returned value &lt;= {@link #total()} when
      * {@code discountRate > 0}.
      *
      * @param discountRate percentage discount to apply, in [0, 100]
