@@ -32,17 +32,25 @@ public class ShoppingCart {
      * @param quantity number of units to add (must be > 0)
      */
     public void addItem(Product product, int quantity) {
-        // TODO (Task 3): add assert pre-condition here
+        // pre-conditions
+        assert product != null : "addItem pre: product must not be null";
+        assert quantity > 0   : "addItem pre: quantity must be > 0";
+
+        int countBefore = items.size();
 
         for (CartItem item : items) {
             if (item.getProduct().getId().equals(product.getId())) {
                 item.setQuantity(item.getQuantity() + quantity);
-                // TODO (Task 3): add assert post-condition here
+                // post: same number of lines (we merged into an existing one)
+                assert items.size() == countBefore : "addItem post: line count must not change on merge";
+                assert total() >= 0 : "invariant: total >= 0";
                 return;
             }
         }
         items.add(new CartItem(product, quantity));
-        // TODO (Task 3): add assert post-condition here
+        // post: exactly one new line was added
+        assert items.size() == countBefore + 1 : "addItem post: a new line must have been added";
+        assert total() >= 0 : "invariant: total >= 0";
     }
 
     /**
@@ -86,12 +94,16 @@ public class ShoppingCart {
      * @return the total after applying the discount
      */
     public double applyDiscount(double discountRate) {
-        // TODO (Task 3): add assert pre-condition here
+        // pre-condition
+        assert discountRate >= 0 && discountRate <= 100 : "applyDiscount pre: rate must be in [0,100]";
 
         double rawTotal = total();
         double discounted = rawTotal - (rawTotal * discountRate / 100);
 
-        // TODO (Task 3): add assert post-condition here
+        // post-condition: any positive discount lowers (or keeps equal when total is 0) the total
+        assert discountRate == 0 || discounted <= rawTotal : "applyDiscount post: discounted must be <= rawTotal";
+        // invariant
+        assert discounted >= 0 : "invariant: discounted total >= 0";
         return discounted;
     }
 

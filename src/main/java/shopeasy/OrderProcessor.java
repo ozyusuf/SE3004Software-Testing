@@ -78,6 +78,11 @@ public class OrderProcessor {
 
         // Step 3: create and return the order
         List<CartItem> snapshot = new ArrayList<>(cart.getItems());
-        return new Order(customerId, snapshot, total);
+        Order order = new Order(customerId, snapshot, total);
+
+        // post-condition: the resulting order describes the same customer and total we just charged
+        assert order.getCustomerId().equals(customerId) : "process post: order must carry the same customer id";
+        assert order.getTotal() == total                : "process post: order total must equal charged amount";
+        return order;
     }
 }
