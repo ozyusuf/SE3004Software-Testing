@@ -5,31 +5,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
- * Task 1 – Specification-Based Testing (Chapter 2)
+ * Task 1 - Specification-Based Testing (Chapter 2).
  *
- * <p>Target class: {@link PriceCalculator}
+ * Domain testing on PriceCalculator.calculate(base, discount, tax).
+ * Three input dimensions, each split into equivalence classes:
+ *   - basePrice:    {0}, (0, large), very-large
+ *   - discountRate: {0}, (0, 100), {100}
+ *   - taxRate:      {0}, (0, 100), {100}
  *
- * <p>Your goal is to test {@code PriceCalculator.calculate(basePrice, discountRate, taxRate)}
- * using the domain testing technique from Chapter 2:
- * <ol>
- *   <li>Identify equivalence partitions for each input dimension.</li>
- *   <li>Identify boundary values between partitions (on-point / off-point).</li>
- *   <li>Write at least 10 meaningful test cases that cover both partitions and boundaries.</li>
- *   <li>Use {@code @ParameterizedTest} with {@code @CsvSource} for tests that share structure.</li>
- *   <li>Add a comment above each test method explaining which partition or boundary it covers.</li>
- * </ol>
- *
- * <h3>Input dimensions to consider</h3>
- * <ul>
- *   <li><b>basePrice</b>  – zero, positive, very large</li>
- *   <li><b>discountRate</b> – 0 (no discount), (0,100) typical, 100 (full discount)</li>
- *   <li><b>taxRate</b>    – 0 (no tax), (0,100) typical, 100 (100% tax)</li>
- * </ul>
+ * On-point boundaries: 0 and 100 for the rates.
+ * Off-points outside [0, 100] are covered by ContractTest (Task 3) since
+ * the production class does not validate them yet.
  */
 class PriceCalculatorSpecTest {
+
+    private static final double EPS = 0.001;
 
     private PriceCalculator calculator;
 
@@ -38,40 +32,114 @@ class PriceCalculatorSpecTest {
         calculator = new PriceCalculator();
     }
 
-    // -----------------------------------------------------------------------
-    // TODO: Write your tests below.
-    //
-    // EXAMPLE STRUCTURE (replace with real cases):
-    //
-    // /** Partition: zero base price — result must always be 0 regardless of rates */
-    // @Test
-    // void zeroPriceAlwaysReturnsZero() {
-    //     assertThat(calculator.calculate(0, 20, 10)).isEqualTo(0.0);
-    // }
-    //
-    // /** Boundary: discountRate at lower bound (0%) — no reduction applied */
-    // @Test
-    // void discountRateZeroMeansNoDiscount() {
-    //     double result = calculator.calculate(100, 0, 0);
-    //     assertThat(result).isEqualTo(100.0);
-    // }
-    //
-    // /** Boundary: discountRate at upper bound (100%) — full discount wipes price to 0 */
-    // @Test
-    // void discountRateHundredMeansFullDiscount() {
-    //     double result = calculator.calculate(100, 100, 0);
-    //     assertThat(result).isEqualTo(0.0);
-    // }
-    //
-    // /** Partition: typical values — check formula correctness */
-    // @ParameterizedTest(name = "base={0}, disc={1}%, tax={2}% => {3}")
-    // @CsvSource({
-    //     "100.0, 10.0, 20.0, 108.0",
-    //     "200.0,  0.0, 10.0, 220.0",
-    // })
-    // void typicalValues(double base, double disc, double tax, double expected) {
-    //     assertThat(calculator.calculate(base, disc, tax)).isCloseTo(expected, within(0.001));
-    // }
-    // -----------------------------------------------------------------------
+    // Partition: basePrice = 0 - result must be 0 regardless of the other rates.
+    @Test
+    void zeroBasePrice_alwaysReturnsZero() {
+        assertThat(calculator.calculate(0, 25, 18)).isCloseTo(0.0, within(EPS));
+        assertThat(calculator.calculate(0, 0, 0)).isCloseTo(0.0, within(EPS));
+        assertThat(calculator.calculate(0, 100, 100)).isCloseTo(0.0, within(EPS));
+    }
 
+    // Identity: 0% discount AND 0% tax -> result equals basePrice.
+    @Test
+    void zeroDiscountAndZeroTax_returnsBasePrice() {
+        double result = calculator.calculate(120.0, 0, 0);
+        assertThat(result).isCloseTo(120.0, within(EPS));
+    }
+
+    // Boundary: discountRate lower bound (0%) - no reduction.
+    @Test
+    void discountAtLowerBound_zeroPercent_keepsPrice() {
+        double result = calculator.calculate(50.0, 0, 10);
+        assertThat(result).isCloseTo(55.0, within(EPS));
+    }
+
+    // Boundary: discountRate upper bound (100%) - everything wiped, tax on zero is zero.
+    @Test
+    void discountAtUpperBound_hundredPercent_zerosResult() {
+        double result = calculator.calculate(200.0, 100, 25);
+        assertThat(result).isCloseTo(0.0, within(EPS));
+    }
+
+    // Boundary: taxRate lower bound (0%) - discounted price returned as-is.
+    @Test
+    void taxAtLowerBound_zeroPercent_noTaxAdded() {
+        double result = calculator.calculate(80.0, 10, 0);
+        assertThat(result).isCloseTo(72.0, within(EPS));
+    }
+
+    // Boundary: taxRate upper bound (100%) - effectively doubles the discounted price.
+    @Test
+    void taxAtUpperBound_hundredPercent_doublesDiscountedPrice() {
+        double result = calculator.calculate(100.0, 0, 100);
+        assertThat(result).isCloseTo(200.0, within(EPS));
+    }
+
+    // Partition: typical mid-range values across all three dimensions.
+    // base * (1 - d/100) * (1 + t/100) = expected
+    @ParameterizedTest(name = "base={0}, disc={1}%, tax={2}% -> {3}")
+    @CsvSource({
+            "100.0, 10.0, 20.0, 108.0",   // mid disc, mid tax
+            "200.0,  0.0, 10.0, 220.0",   // no disc, low tax
+            "150.0, 50.0,  0.0,  75.0",   // half off, no tax
+            "1000.0, 25.0, 8.0, 810.0",   // typical retail
+            "49.99, 15.0, 18.0, 50.13"    // odd values, real-world-ish
+    })
+    void typicalValues(double base, double disc, double tax, double expected) {
+        assertThat(calculator.calculate(base, disc, tax)).isCloseTo(expected, within(0.01));
+    }
+
+    // Partition: very large basePrice should still compute without overflow.
+    @Test
+    void veryLargeBasePrice_handledWithoutOverflow() {
+        double result = calculator.calculate(1_000_000_000.0, 10, 5);
+        // 1e9 * 0.9 * 1.05 = 945_000_000
+        assertThat(result).isCloseTo(945_000_000.0, within(1.0));
+    }
+
+    // Mid-partition fractional discount.
+    @Test
+    void fractionalDiscount() {
+        // 200 * (1 - 0.125) * (1 + 0) = 175
+        double result = calculator.calculate(200.0, 12.5, 0);
+        assertThat(result).isCloseTo(175.0, within(EPS));
+    }
+
+    // Mid-partition fractional tax (e.g. 8.25% sales tax).
+    @Test
+    void fractionalTax() {
+        // 100 * 1 * 1.0825 = 108.25
+        double result = calculator.calculate(100.0, 0, 8.25);
+        assertThat(result).isCloseTo(108.25, within(EPS));
+    }
+
+    // Boundary matrix: extreme combinations of 0/100 for discount and tax.
+    @ParameterizedTest(name = "base={0}, disc={1}, tax={2} -> {3}")
+    @CsvSource({
+            "100.0,   0.0,   0.0, 100.0",
+            "100.0,   0.0, 100.0, 200.0",
+            "100.0, 100.0,   0.0,   0.0",
+            "100.0, 100.0, 100.0,   0.0"
+    })
+    void boundaryMatrix(double base, double disc, double tax, double expected) {
+        assertThat(calculator.calculate(base, disc, tax)).isCloseTo(expected, within(EPS));
+    }
+
+    // Convenience method: applyDiscountOnly should match calculate(base, d, 0).
+    @Test
+    void applyDiscountOnly_matchesCalculateWithZeroTax() {
+        double viaConvenience = calculator.applyDiscountOnly(250.0, 20);
+        double viaCalculate = calculator.calculate(250.0, 20, 0);
+        assertThat(viaConvenience).isCloseTo(viaCalculate, within(EPS));
+        assertThat(viaConvenience).isCloseTo(200.0, within(EPS));
+    }
+
+    // Convenience method: applyTaxOnly should match calculate(base, 0, t).
+    @Test
+    void applyTaxOnly_matchesCalculateWithZeroDiscount() {
+        double viaConvenience = calculator.applyTaxOnly(250.0, 18);
+        double viaCalculate = calculator.calculate(250.0, 0, 18);
+        assertThat(viaConvenience).isCloseTo(viaCalculate, within(EPS));
+        assertThat(viaConvenience).isCloseTo(295.0, within(EPS));
+    }
 }
