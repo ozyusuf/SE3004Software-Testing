@@ -88,12 +88,12 @@
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
-                <version>1.15.8</version>
+                <version>1.17.4</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.pitest</groupId>
                         <artifactId>pitest-junit5-plugin</artifactId>
-                        <version>1.2.1</version>
+                        <version>1.2.2</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -103,6 +103,7 @@
                     <targetTests>
                         <param>shopeasy.*</param>
                     </targetTests>
+                    <argLine>-ea</argLine>
                     <outputFormats>
                         <outputFormat>HTML</outputFormat>
                     </outputFormats>
@@ -111,4 +112,28 @@
 
         </plugins>
     </build>
+
+    <!--
+        Profile used only for the Task 2 mutation-testing bonus.
+        Run with: mvn -P pitest org.pitest:pitest-maven:mutationCoverage
+        It overrides surefire's argLine so that PIT's minion JVM does not
+        inherit the unresolved '@{argLine}' placeholder that JaCoCo populates
+        at runtime (which PIT cannot interpolate, leading to MINION_DIED).
+    -->
+    <profiles>
+        <profile>
+            <id>pitest</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-ea</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
